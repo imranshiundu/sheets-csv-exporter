@@ -1,38 +1,40 @@
 # sheets-csv-exporter
 
-**sheets-csv-exporter** converts arrays, object lists, and JSON files into spreadsheet-safe CSV output.
+Write object lists or pre-built rows to a **Google-Sheets-safe CSV** — as a CLI or Node library.
 
-## Features
+## The safety feature
 
-- Converts object arrays to CSV
-- Converts row arrays to CSV
-- Stable header ordering
-- Optional custom columns
-- Spreadsheet formula-injection protection
-- File writing helper
-- CLI for JSON-to-CSV export
-- Zero runtime dependencies
+Cell values that begin with `=`, `+`, `-`, or `@` are prefixed with `'` **by default**, so
+pasting exported CSV into Sheets can never trigger a formula-injection path.
+Disable only on trusted output: `--no-formula-protection` or `{ protectFormulas: false }`.
 
-## Usage
+## CLI
 
 ```bash
-node cli.js data.json --out export.csv
-```
-
-Choose columns:
-
-```bash
-node cli.js data.json --columns name,email,total --out customers.csv
+node cli.js data.json --out out.csv
+node cli.js data.json --out out.csv --columns id,name,email
+node cli.js data.json --out out.csv --no-formula-protection
+node cli.js --help
 ```
 
 ## Library
 
 ```js
-import { objectsToCsv } from './index.js';
+import { writeCsv, objectsToCsv, rowsToCsv, escapeCell } from './index.js';
 
-const csv = objectsToCsv([{ name: 'Imran', city: 'Nairobi' }]);
+await writeCsv('out.csv', [{ id: 1, name: 'Ada' }]);        // object list → header row included
+await writeCsv('out.csv', [['a', 'b'], ['1', '2']]);        // raw rows as-is
 ```
 
-## Security note
+| Export | Purpose |
+|---|---|
+| `escapeCell(value, opts)` | quoting + formula guard for a single cell |
+| `rowsToCsv(rows, opts)` | rows already `[values...]` |
+| `objectsToCsv(items, opts)` | auto header from union of keys, or `opts.columns` order |
+| `writeCsv(path, data, opts)` | picks rows vs objects, writes file, returns path |
 
-CSV files opened in spreadsheet apps can execute formulas if cells begin with `=`, `+`, `-`, or `@`. This tool escapes dangerous leading characters by default.
+## Tests
+
+```bash
+npm test
+```
